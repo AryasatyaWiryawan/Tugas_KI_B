@@ -1,8 +1,3 @@
-# Python3 code for the above approach
-
-# Hexadecimal to binary conversion
-
-
 def hex2bin(s):
 	mp = {'0': "0000",
 		'1': "0001",
@@ -243,70 +238,78 @@ def encrypt(pt, rkb, rk):
 	# Final permutation: final rearranging of bits to get cipher text
 	cipher_text = permute(combine, final_perm, 64)
 	return cipher_text
+# Key generation function
+def generate_keys(key):
+    # Convert key from hex to binary
+    key = hex2bin(key)
 
+    # Parity bit drop table
+    keyp = [57, 49, 41, 33, 25, 17, 9,
+            1, 58, 50, 42, 34, 26, 18,
+            10, 2, 59, 51, 43, 35, 27,
+            19, 11, 3, 60, 52, 44, 36,
+            63, 55, 47, 39, 31, 23, 15,
+            7, 62, 54, 46, 38, 30, 22,
+            14, 6, 61, 53, 45, 37, 29,
+            21, 13, 5, 28, 20, 12, 4]
 
+    # Getting 56 bit key from 64 bit using the parity bits
+    key = permute(key, keyp, 56)
+
+    # Splitting
+    left = key[0:28]  # rkb for RoundKeys in binary
+    right = key[28:56]  # rk for RoundKeys in hexadecimal
+
+    # Number of bit shifts
+    shift_table = [1, 1, 2, 2,
+                   2, 2, 2, 2,
+                   1, 2, 2, 2,
+                   2, 2, 2, 1]
+
+    # Key- Compression Table : Compression of key from 56 bits to 48 bits
+    key_comp = [14, 17, 11, 24, 1, 5,
+                3, 28, 15, 6, 21, 10,
+                23, 19, 12, 4, 26, 8,
+                16, 7, 27, 20, 13, 2,
+                41, 52, 31, 37, 47, 55,
+                30, 40, 51, 45, 33, 48,
+                44, 49, 39, 56, 34, 53,
+                46, 42, 50, 36, 29, 32]
+
+    rkb = []  # round keys in binary
+    rk = []  # round keys in hexadecimal
+
+    for i in range(0, 16):
+        # Shifting the bits by nth shifts by checking from shift table
+        left = shift_left(left, shift_table[i])
+        right = shift_left(right, shift_table[i])
+
+        # Combination of left and right string
+        combine_str = left + right
+
+        # Compression of key from 56 to 48 bits
+        round_key = permute(combine_str, key_comp, 48)
+
+        rkb.append(round_key)
+        rk.append(bin2hex(round_key))
+
+    return rkb, rk
+
+# Plaintext dan kunci
 pt = "123456ABCD132536"
 key = "AABB09182736CCDD"
 
-# Key generation
-# --hex to binary
-key = hex2bin(key)
-
-# --parity bit drop table
-keyp = [57, 49, 41, 33, 25, 17, 9,
-		1, 58, 50, 42, 34, 26, 18,
-		10, 2, 59, 51, 43, 35, 27,
-		19, 11, 3, 60, 52, 44, 36,
-		63, 55, 47, 39, 31, 23, 15,
-		7, 62, 54, 46, 38, 30, 22,
-		14, 6, 61, 53, 45, 37, 29,
-		21, 13, 5, 28, 20, 12, 4]
-
-# getting 56 bit key from 64 bit using the parity bits
-key = permute(key, keyp, 56)
-
-# Number of bit shifts
-shift_table = [1, 1, 2, 2,
-			2, 2, 2, 2,
-			1, 2, 2, 2,
-			2, 2, 2, 1]
-
-# Key- Compression Table : Compression of key from 56 bits to 48 bits
-key_comp = [14, 17, 11, 24, 1, 5,
-			3, 28, 15, 6, 21, 10,
-			23, 19, 12, 4, 26, 8,
-			16, 7, 27, 20, 13, 2,
-			41, 52, 31, 37, 47, 55,
-			30, 40, 51, 45, 33, 48,
-			44, 49, 39, 56, 34, 53,
-			46, 42, 50, 36, 29, 32]
-
-# Splitting
-left = key[0:28] # rkb for RoundKeys in binary
-right = key[28:56] # rk for RoundKeys in hexadecimal
-
-rkb = []
-rk = []
-for i in range(0, 16):
-	# Shifting the bits by nth shifts by checking from shift table
-	left = shift_left(left, shift_table[i])
-	right = shift_left(right, shift_table[i])
-
-	# Combination of left and right string
-	combine_str = left + right
-
-	# Compression of key from 56 to 48 bits
-	round_key = permute(combine_str, key_comp, 48)
-
-	rkb.append(round_key)
-	rk.append(bin2hex(round_key))
+# Generate keys
+rkb, rk = generate_keys(key)
 
 print("Encryption")
 cipher_text = bin2hex(encrypt(pt, rkb, rk))
 print("Cipher Text : ", cipher_text)
 
 print("Decryption")
+# Untuk dekripsi, subkey dibalik urutannya
 rkb_rev = rkb[::-1]
 rk_rev = rk[::-1]
 text = bin2hex(encrypt(cipher_text, rkb_rev, rk_rev))
 print("Plain Text : ", text)
+
